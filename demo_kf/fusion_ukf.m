@@ -115,7 +115,7 @@ for k=1:Pcs
 			
 			%%%add the noise
 			outlier = zero_one_distribution(0.1)';
-            outlier = zeros(5,1); %% you could ignore annotation without outlier
+%             outlier = zeros(5,1); %% you could ignore annotation without outlier
 	        Z_meas = Z_meas + outlier;
             noise = [noise,outlier];
              
