@@ -1,4 +1,14 @@
-function xyz = uwbtriLocation(rangings)
+%%  given 5 Anchor Position and it's Ranging d with the target
+%   calculate the target xyz
+%   * = Anchor
+%   o = Target
+%
+%     *     *      *
+%           o
+%     *            *    
+%%
+function xyz = triangulate(rangings)
+
 UKF.BSOneCoordinate = [9.21;1.08;-0.17];%4.08
 UKF.BSTwoCoordinate = [0;0;-1.885];
 UKF.BSThreeCoordinate = [0;6.281;-1.37];

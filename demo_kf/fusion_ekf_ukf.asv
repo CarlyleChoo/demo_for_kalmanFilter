@@ -124,7 +124,7 @@ for k=1:Pcs
 
         %%%add the noise
         outlier = zero_one_distribution(0.1)';
-%         outlier = zeros(5,1);
+        outlier = zeros(5,1);
         Z_meas = Z_meas + outlier;
         noise = [noise,outlier];
 
@@ -137,12 +137,12 @@ for k=1:Pcs
         dX = K*(Z_meas - h_func(X));Invation(:,k) = Z_meas - h_func(X);
         P = P - K*H*P;
 
-%         %%%%%1个基站测距值
-%         H_ = H(bS,:);
-%         K = P*H_'*inv(H_*P*H_'+R(bS,bS));
-%         INVT = Z_meas - h_func(X);
-%         dX = K*INVT(bS);
-%         P = P - K*H_*P;
+			%%%%%1个基站测距值
+			H_ = H(bS,:);
+			K = P*H_'*inv(H_*P*H_'+R(bS,bS));
+			INVT = Z_meas - h_func(X);
+			dX = K*INVT(bS);
+			P = P - K*H_*P;
 
         %%%feedback
         X = X + dX;
@@ -352,3 +352,22 @@ plot(SampleTimePoint(1:Pcs),MM(base+2,:),'k')
 plot(SampleTimePoint(1:Pcs),MM1(base+2,:),'m')
 title('Gyro Bias');xlabel('T:s');ylabel('z axis:deg/s');grid on;
 legend('Real Error','EKF UWB-IMU Error','UKF UWB-IMU Error')
+
+
+% figure(7)
+% load imu_HandledFileToMatData.mat
+% plot(SampleTimePoint,g_vector);grid on
+
+% 
+% 
+% figure(4)
+% plot(TraceData(:,1),TraceData(:,base+1)-20,'r*')
+% hold on
+% plot(SampleTimePoint(1:Pcs),MM(base,:)-20)
+% 
+% plot(SampleTimePoint(1:Pcs),Invation(1,:),...
+%      SampleTimePoint(1:Pcs), Invation(2,:),...
+% 		   SampleTimePoint(1:Pcs),Invation(3,:),...
+% 		   SampleTimePoint(1:Pcs),Invation(4,:),...
+% 		   SampleTimePoint(1:Pcs),Invation(5,:),'Marker','*','Linestyle','none')
+% grid on

@@ -4,7 +4,7 @@ global UKF;
 close all
 
 addpath('ekfukf');
-load('TraceData.mat')
+load('ground_truth.mat')
 % Measurement model and it's derivative
 f_func = @ukf_ins_f;
 df_dx_func = @ekf_err_ins_f;
@@ -26,7 +26,7 @@ UKF.bSPcs = 5;
  %%%%if LoadFileDate
 matfile = dir('*_HandledFileToMatData.mat');
 if isempty(matfile)
-    disp('            当前文件夹没有*_HandledFileToMatData.mat,请读取.txt文件')
+    disp('            None Found *_HandledFileToMatData.mat')
 end
 
 for ki=1:size(matfile)
@@ -35,34 +35,19 @@ end
 
 %%-------5.3 EKF  系统参数:系统噪声Qk和测量噪声Rk
 %%%%Added by OuyangGao 2016.08.26
-% % % 系统噪声Qk
-% ProcessNoiseVariance = [ 
-% 0.021524908999980   0.021524908999980   0.030995868959971%%%Accelerate_Variance
-% 0.000004782781671   0.000004782781671   0.000006887205607%%%Accelerate_Bias_Variance
-% 0.007615858582254   0.007615858582254   0.007615858582254 %%%Gyroscope_Variance
-% 0.000000846159499   0.000000846159499   0.000000846159499%%%Gyroscope_Bias_Variance
-% ];
+%%% 系统噪声Q
 ProcessNoiseVariance = [3.9e-04    4.5e-4       7.9e-4;   %%%Accelerate_Variance
                         1.9239e-7, 3.5379e-7, 2.4626e-7;%%%Accelerate_Bias_Variance
                         8.7e-04,1.2e-03,1.1e-03;      %%%Gyroscope_Variance
                         1.3111e-9,2.5134e-9,    2.4871e-9    %%%Gyroscope_Bias_Variance
-                      ];
-% 	 9.6e-03    9.6e-03       9.6e-03;   %%%Accelerate_Variance
-% 												    2.1239e-6, 2.1379e-6, 2.1626e-6;%%%Accelerate_Bias_Variance
-% 												    2.2e-04,2.2e-04,2.1e-04;      %%%Gyroscope_Variance
-% 												    6.8111e-8,6.8134e-8,    6.8871e-8    %%%Gyroscope_Bias_Variance
-												  
+                      ];												  
 Q =  [ 
 		   diag(ProcessNoiseVariance(1,:)),zeros(3,12); 
 		   zeros(3,3), diag(ProcessNoiseVariance(1,:)),zeros(3,9); 
 			zeros(3,6), diag(ProcessNoiseVariance(3,:)),zeros(3,6); 
 			zeros(3,9),  diag(ProcessNoiseVariance(2,:)),zeros(3,3);
-			zeros(3,12), diag(ProcessNoiseVariance(4,:))];											  
-% Q =  [ 
-% 	    diag(ProcessNoiseVariance(1,:)),zeros(3,9);
-%         zeros(3,3),  diag(ProcessNoiseVariance(2,:)),zeros(3,6);
-%         zeros(3,6),  diag(ProcessNoiseVariance(3,:)),zeros(3,3);
-%         zeros(3,9),  diag(ProcessNoiseVariance(4,:))];
+			zeros(3,12), diag(ProcessNoiseVariance(4,:))];	
+%%% 测量噪声
 MeasureNoiseVariance =[2.98e-03,2.9e-03,...
 					   1.8e-03,1.2e-03,...
 					   2.4e-03];%%%%UWB定位的测量噪声	
@@ -78,8 +63,6 @@ X0 = [Position_init;Speed_init;Accelerate_Bias_init;Gyroscope_Bias_init;Quaterni
 
 StaticBiasAccelVariance  =[6.7203e-5,      8.7258e-5,       4.2737e-5];
 StaticBiasGyroVariance  =   [2.2178e-5,     5.9452e-5,        1.3473e-5];
-% StaticBiasAccelVariance = [0.021522517520569   0.021522517520569   0.030992425229620];
-% StaticBiasGyroVariance  = [0.007615435494668 0.007615435494668  0.007615435494668];
 
 init_c = 0.1;
 P0 = [init_c*eye(3,3),zeros(3,12);
@@ -103,6 +86,7 @@ uwb_iter = 1;
 dt = 0.02;
 Pcs = length(SampleTimePoint);
 ISPUTCHAR = 0;
+
 % Reserve space for estimates.
 MM = zeros(size(X,1),Pcs);
 PP = zeros(size(X,1),size(X,1),Pcs);
@@ -117,63 +101,46 @@ for k=1:Pcs
     [X,P] = ukf_predict1(X,P,f_func,Q,[dt;uk]);
 
 	if ISPUTCHAR == 1
-			cprintf('text', 'T: %0.3fs, L [%0.2f %0.2f %0.2f]m, V [%0.3f %0.3f %0.3f]m/s ,Pl [%0.5f %0.5f %0.5f],Pv [%0.5f %0.5f %0.5f]m/s^2\n',...
-					   SampleTimePoint(imu_iter) ,X(1),X(2),X(3),X(4),X(5),X(6),P(1,1),P(2,2),P(3,3),P(4,4),P(5,5),P(6,6)); 
+        cprintf('text', 'T: %0.3fs, L [%0.2f %0.2f %0.2f]m, V [%0.3f %0.3f %0.3f]m/s ,Pl [%0.5f %0.5f %0.5f],Pv [%0.5f %0.5f %0.5f]m/s^2\n',...
+                   SampleTimePoint(imu_iter) ,X(1),X(2),X(3),X(4),X(5),X(6),P(1,1),P(2,2),P(3,3),P(4,4),P(5,5),P(6,6)); 
 	end
 	
-	%%% Update
-	   if  uwb_iter <= length(UWBBroadTime_vector) && UWBBroadTime_vector(uwb_iter)== SampleTimePoint(imu_iter) 	
-			Z_meas = Uwbranging_vector(uwb_iter,:)';
-			
-			%%%add the noise
-			outlier = zero_one_dist(0.1)';
-			outlier = zeros(5,1);
-	         Z_meas = Z_meas + outlier;noise = [noise,outlier];
-             
-            [X,P] = ukf_update1(X,P,Z_meas,h_func,R);
-             
-% 			[~,H] = dh_dx_func(X);
-% 			
-% 			%%5个基站同时测距
-% 			K = P*H'*inv(H*P*H'+R);
-% 			dX = K*(Z_meas - h_func(X));Invation(:,k) = Z_meas - h_func(X);
-% 			P = P - K*H*P;
+	%% Update
+   if  uwb_iter <= length(UWBBroadTime_vector) && UWBBroadTime_vector(uwb_iter)== SampleTimePoint(imu_iter) 	
+        Z_meas = Uwbranging_vector(uwb_iter,:)';
 
-% 			%%%%%1个基站测距值
-% 			H_ = H(bS,:);
-% 			K = P*H_'*inv(H_*P*H_'+R(bS,bS));
-% 			INVT = Z_meas - h_func(X);
-% 			dX = K*INVT(bS);
-% 			P = P - K*H_*P;
-			
-			%%%feedback
-% 			X = X + dX;
-			if ISPUTCHAR == 1
-			       cprintf('err', 'T: %0.3fs, L [%0.2f %0.2f %0.2f]m, V [%0.3f %0.3f %0.3f]m/s ,Pl [%0.5f %0.5f %0.5f],Pv [%0.5f %0.5f %0.5f]m/s^2\n\n\n',...
-				   UWBBroadTime_vector(uwb_iter) ,X(1),X(2),X(3),X(4),X(5),X(6),P(1,1),P(2,2),P(3,3),P(4,4),P(5,5),P(6,6)); 
-			end
-% 			uwbxyz = uwbtriLocation(Z_meas);UWBXYZ = [UWBXYZ,[UWBBroadTime_vector(uwb_iter);uwbxyz;TraceData(k,2:4)']];
-			uwb_iter = uwb_iter + 1;
-				switch bS
-					case 1 
-						bS = 3;
-					case 2
-						bS = 4;
-					case 3
-						bS = 5;%%5
-					case 4
-						bS = 1;
-					case 5
-						bS = 2;%%2
-				end
-	   end
+        %%%add the noise
+        outlier = zero_one_distribution(0.1)';
+        outlier = zeros(5,1); %% you could ignore annotation without outlier
+        Z_meas = Z_meas + outlier;noise = [noise,outlier];
+
+        [X,P] = ukf_update1(X,P,Z_meas,h_func,R);
+        %% is equal with ukf_update1(...)
+%         [~,H] = dh_dx_func(X);
+% 
+%         %%5个基站同时测距
+%         K = P*H'*inv(H*P*H'+R);
+%         dX = K*(Z_meas - h_func(X));Invation(:,k) = Z_meas - h_func(X);
+%         P = P - K*H*P;
+% 
+%         %%%%%1个基站测距值
+%         H_ = H(bS,:);
+%         K = P*H_'*inv(H_*P*H_'+R(bS,bS));
+%         INVT = Z_meas - h_func(X);
+%         dX = K*INVT(bS);
+%         P = P - K*H_*P;
+
+        %%% feedback
+ 		%X = X + dX;
+        if ISPUTCHAR == 1
+               cprintf('err', 'T: %0.3fs, L [%0.2f %0.2f %0.2f]m, V [%0.3f %0.3f %0.3f]m/s ,Pl [%0.5f %0.5f %0.5f],Pv [%0.5f %0.5f %0.5f]m/s^2\n\n\n',...
+               UWBBroadTime_vector(uwb_iter) ,X(1),X(2),X(3),X(4),X(5),X(6),P(1,1),P(2,2),P(3,3),P(4,4),P(5,5),P(6,6)); 
+        end
+        uwb_iter = uwb_iter + 1;
+   end
 	   
-% 	   if imu_iter == 500 || imu_iter == 700
-% % 			 disp('please input any key , continue')
-% % 			 pause;
-% 	   end
-    MM(:,k)   = X;
-    PP(:,:,k) = P;
+   MM(:,k)   = X;
+   PP(:,:,k) = P;
    imu_iter = imu_iter + 1;
 end  
 
@@ -181,9 +148,10 @@ MM(7:9,:)= MM(7:9,:)/pi*180;
 noise = noise';
 for uwb_iter=1:4:length(UWBBroadTime_vector)-10
 	    Z_meas = diag(Uwbranging_vector(uwb_iter:uwb_iter+4,:) +  noise(uwb_iter:uwb_iter+4,:)) ;
-        uwbxyz = uwbtriLocation(Z_meas);
+        uwbxyz = triangulate(Z_meas);
 		UWBXYZ = [UWBXYZ,[UWBBroadTime_vector(uwb_iter+2);uwbxyz;TraceData(4*(uwb_iter+2)+1,2:4)']];
 end
+%-------------- figure 1: display trajectory ----------------------%
 base = 1;
 figure(1)
 subplot(311)
@@ -194,7 +162,6 @@ plot(UWBXYZ(1,:),UWBXYZ(2,:),'k')
 title('Position x Axis');xlabel('T:s');ylabel('X axis:m');grid on;
 legend('Real Trajectory','UWB-IMU Trajectory','UWB Trajectory')
 
-% figure(2)
 subplot(312)
 plot(TraceData(:,1),TraceData(:,base+2),'g.')
 hold on
@@ -203,7 +170,6 @@ plot(UWBXYZ(1,:),UWBXYZ(3,:),'k')
 title('Position y Axis');xlabel('T:s');ylabel('Y axis:m');grid on;
 legend('Real Trajectory','UWB-IMU Trajectory','UWB Trajectory')
 
-% figure(3)
 subplot(313)
 plot(TraceData(:,1),TraceData(:,base+3),'g.')
 hold on
@@ -212,6 +178,7 @@ plot(UWBXYZ(1,:),UWBXYZ(4,:),'k')
 title('Position z Axis');xlabel('T:s');ylabel('Z axis:m');grid on;
 legend('Real Trajectory','UWB-IMU Trajectory','UWB Trajectory')
 
+%-------------- figure 2: display trajectory error -----------------%
 base = 1;
 figure(2)
 subplot(331)
@@ -236,7 +203,6 @@ set(hp,'FaceColor',[0 .5 .5],'EdgeColor','w')
 title('Position x Axis Error Hist');grid on;
 legend('UWB Trajectory Error')
 
-% figure(2)
 subplot(334)
 hold on
 plot(SampleTimePoint(1:Pcs),MM(base+1,:)' - TraceData(:,base+2),'m')
@@ -259,7 +225,6 @@ set(hp,'FaceColor',[0 .5 .5],'EdgeColor','w')
 title('Position x Axis Error Hist');grid on;
 legend('UWB Trajectory Error')
 
-% figure(3)
 subplot(337)
 hold on
 plot(SampleTimePoint(1:Pcs),MM(base+2,:)' - TraceData(:,base+3),'m')
@@ -282,7 +247,7 @@ set(hp,'FaceColor',[0 .5 .5],'EdgeColor','w')
 title('Position x Axis Error Hist');grid on;
 legend('UWB Trajectory Error')
 
-
+%-------------- figure 3: display Speed state  -----------------%
 base = 4;
 figure(3)
 subplot(311)
@@ -303,7 +268,7 @@ hold on
 plot(SampleTimePoint(1:Pcs),MM(base+2,:),'k')
 title('Speed z Axis');xlabel('T:s');ylabel('z axis:m');grid on;
 
-
+%-------------- figure 4: display Pose state  -----------------%
 base = 7;
 figure(4)
 subplot(311)
@@ -327,6 +292,7 @@ plot(SampleTimePoint(1:Pcs),MM(base+2,:),'k')
 title('Euler');grid on;
 legend('Real Atti','UWB-IMU  Atti')
 
+%-------------- figure 5: display estimated accel bias  ----------%
 base = 10;
 figure(5)
 subplot(311)
@@ -350,6 +316,7 @@ plot(SampleTimePoint(1:Pcs),MM(base+2,:),'k')
 title('Accel Bias');grid on;
 legend('Real Error','UWB-IMU  Error')
 
+%-------------- figure 6: display estimated gyro bias  ----------%
 base = 13;
 figure(6)
 subplot(311)
@@ -372,21 +339,3 @@ hold on
 plot(SampleTimePoint(1:Pcs),MM(base+2,:),'k')
 title('Gyro Bias');grid on;
 legend('Real Error','UWB-IMU  Error')
-
-figure(7)
-load imu_HandledFileToMatData.mat
-plot(SampleTimePoint,g_vector);grid on
-
-% 
-% 
-% figure(4)
-% plot(TraceData(:,1),TraceData(:,base+1)-20,'r*')
-% hold on
-% plot(SampleTimePoint(1:Pcs),MM(base,:)-20)
-% 
-% plot(SampleTimePoint(1:Pcs),Invation(1,:),...
-%      SampleTimePoint(1:Pcs), Invation(2,:),...
-% 		   SampleTimePoint(1:Pcs),Invation(3,:),...
-% 		   SampleTimePoint(1:Pcs),Invation(4,:),...
-% 		   SampleTimePoint(1:Pcs),Invation(5,:),'Marker','*','Linestyle','none')
-% grid on

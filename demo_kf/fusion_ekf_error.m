@@ -13,7 +13,7 @@ close all
 global UKF;
 
 addpath('ekfukf');
-load('TraceData.mat')
+load('ground_truth.mat')
 % Measurement model and it's derivative
 f_func = @ekf_ins_f;
 df_dx_func = @ekf_err_ins_f;
@@ -34,7 +34,7 @@ UKF.bSPcs = 5;
 % download the sensor data
 matfile = dir('*_HandledFileToMatData.mat');
 if isempty(matfile)
-    disp('            当前文件夹没有*_HandledFileToMatData.mat,请读取.txt文件')
+    disp('            None Found *_HandledFileToMatData.mat')
 end
 
 for ki=1:size(matfile)
@@ -118,8 +118,9 @@ for k=1:Pcs
 			Z_meas = Uwbranging_vector(uwb_iter,:)';
 			
 			%%%add the outlier noise
-			outlier = zero_one_dist(0.1)';
-			outlier = zeros(5,1);
+			outlier = zero_one_distribution(0.1)';
+			%outlier = zeros(5,1); %% you could ignore annotation without outlier
+
 	        Z_meas = Z_meas + outlier;
             noise = [noise,outlier];
              
@@ -136,18 +137,6 @@ for k=1:Pcs
 % 			INVT = Z_meas - h_func(X);
 % 			dX = K*INVT(bS);
 % 			P = P - K*H_*P;
-%             switch bS
-%                 case 1 
-%                     bS = 3;
-%                 case 2
-%                     bS = 4;
-%                 case 3
-%                     bS = 5;%%5
-%                 case 4
-%                     bS = 1;
-%                 case 5
-%                     bS = 2;%%2
-%             end
 			
 			%%%feedback
  			X = X + dX;
@@ -156,7 +145,6 @@ for k=1:Pcs
                    'T: %0.3fs, L [%0.2f %0.2f %0.2f]m, V [%0.3f %0.3f %0.3f]m/s ,Pl [%0.5f %0.5f %0.5f],Pv [%0.5f %0.5f %0.5f]m/s^2\n\n\n',...
 				   UWBBroadTime_vector(uwb_iter) ,X(1),X(2),X(3),X(4),X(5),X(6),P(1,1),P(2,2),P(3,3),P(4,4),P(5,5),P(6,6)); 
 			end
-% 			uwbxyz = uwbtriLocation(Z_meas);UWBXYZ = [UWBXYZ,[UWBBroadTime_vector(uwb_iter);uwbxyz;TraceData(k,2:4)']];
 			uwb_iter = uwb_iter + 1;
 	   end
 	   
@@ -169,9 +157,10 @@ MM(7:9,:)= MM(7:9,:)/pi*180;
 noise = noise';
 for uwb_iter=1:4:length(UWBBroadTime_vector)-10
 	    Z_meas = diag(Uwbranging_vector(uwb_iter:uwb_iter+4,:) +  noise(uwb_iter:uwb_iter+4,:)) ;
-        uwbxyz = uwbtriLocation(Z_meas);
+        uwbxyz = triangulate(Z_meas);
 		UWBXYZ = [UWBXYZ,[UWBBroadTime_vector(uwb_iter+2);uwbxyz;TraceData(4*(uwb_iter+2)+1,2:4)']];
 end
+%-------------- figure 1: display trajectory ----------------------%
 base = 1;
 figure(1)
 subplot(311)
@@ -182,7 +171,6 @@ plot(UWBXYZ(1,:),UWBXYZ(2,:),'k')
 title('Position x Axis');xlabel('T:s');ylabel('X axis:m');grid on;
 legend('Real Trajectory','UWB-IMU Trajectory','UWB Trajectory')
 
-% figure(2)
 subplot(312)
 plot(TraceData(:,1),TraceData(:,base+2),'g.')
 hold on
@@ -191,7 +179,6 @@ plot(UWBXYZ(1,:),UWBXYZ(3,:),'k')
 title('Position y Axis');xlabel('T:s');ylabel('Y axis:m');grid on;
 legend('Real Trajectory','UWB-IMU Trajectory','UWB Trajectory')
 
-% figure(3)
 subplot(313)
 plot(TraceData(:,1),TraceData(:,base+3),'g.')
 hold on
@@ -200,6 +187,7 @@ plot(UWBXYZ(1,:),UWBXYZ(4,:),'k')
 title('Position z Axis');xlabel('T:s');ylabel('Z axis:m');grid on;
 legend('Real Trajectory','UWB-IMU Trajectory','UWB Trajectory')
 
+%-------------- figure 2: display trajectory error -----------------%
 base = 1;
 figure(2)
 subplot(331)
@@ -224,7 +212,6 @@ set(hp,'FaceColor',[0 .5 .5],'EdgeColor','w')
 title('Position x Axis Error Hist');grid on;
 legend('UWB Trajectory Error')
 
-% figure(2)
 subplot(334)
 hold on
 plot(SampleTimePoint(1:Pcs),MM(base+1,:)' - TraceData(:,base+2),'m')
@@ -247,7 +234,6 @@ set(hp,'FaceColor',[0 .5 .5],'EdgeColor','w')
 title('Position x Axis Error Hist');grid on;
 legend('UWB Trajectory Error')
 
-% figure(3)
 subplot(337)
 hold on
 plot(SampleTimePoint(1:Pcs),MM(base+2,:)' - TraceData(:,base+3),'m')
@@ -270,7 +256,7 @@ set(hp,'FaceColor',[0 .5 .5],'EdgeColor','w')
 title('Position x Axis Error Hist');grid on;
 legend('UWB Trajectory Error')
 
-
+%-------------- figure 3: display Speed state  -----------------%
 base = 4;
 figure(3)
 subplot(311)
@@ -292,6 +278,7 @@ plot(SampleTimePoint(1:Pcs),MM(base+2,:),'k')
 title('Speed z Axis');xlabel('T:s');ylabel('z axis:m');grid on;
 
 
+%-------------- figure 4: display Pose state  -----------------%
 base = 7;
 figure(4)
 subplot(311)
@@ -315,6 +302,7 @@ plot(SampleTimePoint(1:Pcs),MM(base+2,:),'k')
 title('Euler');grid on;
 legend('Real Atti','UWB-IMU  Atti')
 
+%-------------- figure 5: display estimated accel bias  ----------%
 base = 10;
 figure(5)
 subplot(311)
@@ -338,6 +326,7 @@ plot(SampleTimePoint(1:Pcs),MM(base+2,:),'k')
 title('Accel Bias');grid on;
 legend('Real Error','UWB-IMU  Error')
 
+%-------------- figure 6: display estimated gyro bias  ----------%
 base = 13;
 figure(6)
 subplot(311)
