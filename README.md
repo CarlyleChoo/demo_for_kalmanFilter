@@ -9,10 +9,10 @@ this is fusion algorithm with only ranging(UWB) and 6-axis imu sensor in similin
 
 ## Figure
  - error
- ![image](https://github.com/gao-ouyang/demo_for_kalmanFilter/blob/master/demo_kf/result/error.PNG)
+ ![image](./demo_kf/result/error.PNG)
  - trajectory
- ![image](https://github.com/gao-ouyang/demo_for_kalmanFilter/blob/master/demo_kf/result/xyz.PNG)
+ ![image](./demo_kf/result/xyz.PNG)
  - speed
- ![image](https://github.com/gao-ouyang/demo_for_kalmanFilter/blob/master/demo_kf/result/speed.PNG)
+ ![image](./demo_kf/result/speed.PNG)
  - pose
- ![image](https://github.com/gao-ouyang/demo_for_kalmanFilter/blob/master/demo_kf/result/pose.PNG)
+ ![image](./demo_kf/result/pose.PNG)
