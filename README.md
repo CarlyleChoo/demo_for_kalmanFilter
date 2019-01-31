@@ -3,9 +3,8 @@
 this is fusion algorithm with only ranging(UWB) and 6-axis imu sensor in similink data
 
 ## Demo
- - [fusion_ekf_error.m][1]  
- - [fusion_ukf_error.m][2]  
- - [fusion_ekf_ukf.m][3]  
+ - [demo_ekf_error.m][1]  
+ - [demo_ukf.m][2]  
 
 ## Figure
  - error
@@ -17,6 +16,5 @@ this is fusion algorithm with only ranging(UWB) and 6-axis imu sensor in similin
  - pose
  ![image](./demo_kf/result/pose.PNG)
  
- [1]: ./demo_kf/fusion_ekf_error.m 
- [2]: ./demo_kf/fusion_ukf_error.m
- [3]: ./demo_kf/fusion_ekf_ukf.m  
+ [1]: ./demo_kf/demo_ekf_error.m 
+ [2]: ./demo_kf/demo_ukf.m
