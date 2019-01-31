@@ -6,26 +6,27 @@
 %     *     *      *
 %           o
 %     *            *    
+%  @ in : all ranging (m)
+%  @ out: 3d position triangulated
 %%
 function xyz = triangulate(rangings)
 
-UKF.BSOneCoordinate = [9.21;1.08;-0.17];%4.08
-UKF.BSTwoCoordinate = [0;0;-1.885];
-UKF.BSThreeCoordinate = [0;6.281;-1.37];
-UKF.BSFourCoordinate = [1.705;12.88;-2.27];
-UKF.BSFiveCoordinate = [9.31;11.59;-0.52];
-UKF.BaseS_Position = [UKF.BSOneCoordinate,UKF.BSTwoCoordinate,...
-					  UKF.BSThreeCoordinate,UKF.BSFourCoordinate,...
-					  UKF.BSFiveCoordinate]*30;
-UKF.changshu =           [norm(UKF.BSOneCoordinate),norm(UKF.BSTwoCoordinate),...
-										 norm(UKF.BSThreeCoordinate),norm(UKF.BSFourCoordinate),...
-										 norm(UKF.BSFiveCoordinate)]'*30;
-UKF.bSPcs = 5;
-bSCoordinate=UKF.BaseS_Position';
-bSPcs = UKF.bSPcs;
+% anchor position 
+AnchorOne = [9.21;1.08;-0.17];%4.08
+AnchorTwo = [0;0;-1.885];
+AnchorThree = [0;6.281;-1.37];
+AnchorFour = [1.705;12.88;-2.27];
+AnchorFive = [9.31;11.59;-0.52];
+bSCoordinate =   [AnchorOne, AnchorTwo,...
+				  AnchorThree, AnchorFour,...
+				  AnchorFive]'*30;
+constantValue =  [norm(AnchorOne),norm(AnchorTwo),...
+				  norm(AnchorThree),norm(AnchorFour),...
+				  norm(AnchorFive)]'*30;
+bSPcs = 5;
 A = bSCoordinate(1:bSPcs-1,:)  - repmat(bSCoordinate(bSPcs,:),bSPcs-1,1);
 M = -0.5*inv(A'*A)* A';
-c = (UKF.changshu(1:bSPcs-1,:).^2 -UKF.changshu(bSPcs,:).^2);
+c = (constantValue(1:bSPcs-1,:).^2 -constantValue(bSPcs,:).^2);
 xyz = M*(rangings(1:bSPcs-1,:).^2 - rangings(bSPcs,:).^2 - c ); 
 
 end

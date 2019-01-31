@@ -8,8 +8,8 @@ load('ground_truth.mat')
 % Measurement model and it's derivative
 f_func = @ekf_ins_f;
 df_dx_func = @ekf_err_ins_f;
-h_func = @ekf_uwb_h;
-dh_dx_func = @ekf_err_uwb_h;
+h_func = @uwb_h;
+dh_dx_func = @err_uwb_h;
 
 
 UKF.BSOneCoordinate = [9.21;1.08;-0.17];%4.08
@@ -33,9 +33,9 @@ for ki=1:size(matfile)
     load(matfile(ki).name)
 end
 
-%%-------5.3 EKF  ÏµÍ³²ÎÊý:ÏµÍ³ÔëÉùQkºÍ²âÁ¿ÔëÉùRk
+%%-------5.3 EKF  ÏµÍ³ï¿½ï¿½ï¿½ï¿½:ÏµÍ³ï¿½ï¿½ï¿½ï¿½Qkï¿½Í²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Rk
 %%%%Added by OuyangGao 2016.08.26
-% % % ÏµÍ³ÔëÉùQk
+% % % ÏµÍ³ï¿½ï¿½ï¿½ï¿½Qk
 ProcessNoiseVariance = [3.9e-04    4.5e-4       7.9e-4;   %%%Accelerate_Variance
                         1.9239e-7, 3.5379e-7, 2.4626e-7;%%%Accelerate_Bias_Variance
                         8.7e-04,1.2e-03,1.1e-03;      %%%Gyroscope_Variance
@@ -49,7 +49,7 @@ Q =  [
 			zeros(3,12), diag(ProcessNoiseVariance(4,:))];											  
 MeasureNoiseVariance =[2.98e-03,2.9e-03,...
 					   1.8e-03,1.2e-03,...
-					   2.4e-03];%%%%UWB¶¨Î»µÄ²âÁ¿ÔëÉù	
+					   2.4e-03];%%%%UWBï¿½ï¿½Î»ï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½	
 R = diag(MeasureNoiseVariance);
 
 Position_init =[20;100;-1.9];    deta_Position_init = [0;0;0];
@@ -69,7 +69,7 @@ P0 = [init_c*eye(3,3),zeros(3,12);
 	  zeros(3,6),  1e-2*init_c* eye(3,3),zeros(3,6);
       zeros(3,9),   diag(StaticBiasGyroVariance),zeros(3,3);
       zeros(3,12),   diag( StaticBiasAccelVariance);
-      ];  %%%¶ÔÓ¦ÓÚXkµÄË³Ðò
+      ];  %%%ï¿½ï¿½Ó¦ï¿½ï¿½Xkï¿½ï¿½Ë³ï¿½ï¿½
 
 % Initial guesses for the state mean and covariance.
 X = [2;2;-3;zeros(3,1);10/180*pi;-10/180*pi;20/180*pi;...
@@ -104,7 +104,7 @@ for k=1:Pcs
 	uk = [a_vector(imu_iter,:)';g_vector(imu_iter,:)'/180*pi];
 	
 	%%%%%%%---------------------Predict 
-    %%% £¨1£©ekf
+    %%% ï¿½ï¿½1ï¿½ï¿½ekf
 	uk = uk + dX(10:15);
 	[~,E,D] = df_dx_func(X,[dt;uk(1:3);X(7:9)]);
 	X(1:9) = f_func(X,[dt;uk;X(7:9)]);
@@ -129,15 +129,15 @@ for k=1:Pcs
         noise = [noise,outlier];
 
          %%%%------------Update 
-         %%%£¨1£©ekf
+         %%%ï¿½ï¿½1ï¿½ï¿½ekf
         [~,H] = dh_dx_func(X);
 
-        %%5¸ö»ùÕ¾Í¬Ê±²â¾à
+        %%5ï¿½ï¿½ï¿½ï¿½Õ¾Í¬Ê±ï¿½ï¿½ï¿½
         K = P*H'*inv(H*P*H'+R);
         dX = K*(Z_meas - h_func(X));Invation(:,k) = Z_meas - h_func(X);
         P = P - K*H*P;
 
-%         %%%%%1¸ö»ùÕ¾²â¾àÖµ
+%         %%%%%1ï¿½ï¿½ï¿½ï¿½Õ¾ï¿½ï¿½ï¿½Öµ
 %         H_ = H(bS,:);
 %         K = P*H_'*inv(H_*P*H_'+R(bS,bS));
 %         INVT = Z_meas - h_func(X);
@@ -147,7 +147,7 @@ for k=1:Pcs
         %%%feedback
         X = X + dX;
 
-         %%%£¨2£©ukf
+         %%%ï¿½ï¿½2ï¿½ï¿½ukf
         [X1,P1] = ukf_update1(X1,P1,Z_meas,h_func,R);
         if ISPUTCHAR == 1
                cprintf('err', 'T: %0.3fs, L [%0.2f %0.2f %0.2f]m, V [%0.3f %0.3f %0.3f]m/s ,Pl [%0.5f %0.5f %0.5f],Pv [%0.5f %0.5f %0.5f]m/s^2\n\n\n',...

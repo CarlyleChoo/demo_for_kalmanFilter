@@ -9,12 +9,10 @@
 function [Y,H] = ekf_err_uwb_h(x,param)
     global UKF;
     position = x(1:3);	
-    bSPcs = UKF.bSPcs;
+    bSPcs = UKF.AnchorPcs;
 	H = [];
-	TM =   repmat(position,1,bSPcs) - UKF.BaseS_Position;%%/UKF.LightSpeed;
+	TM = repmat(position,1,bSPcs) - UKF.AnchorPosition;
 	for ki=1:bSPcs
 	       H = [H ;TM(:,ki)'/norm(TM(:,ki)),zeros(1,12)];
 	end
 	Y = [];
-	
-

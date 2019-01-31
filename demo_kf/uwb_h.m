@@ -9,11 +9,11 @@
 function [Y,H] = ekf_uwb_h(x,param)
     global UKF;
     position = x(1:3);	
-    bSPcs = UKF.bSPcs;
+    bSPcs = UKF.AnchorPcs;
 	Zpred = [];
-	TM = repmat(position,1,bSPcs) - UKF.BaseS_Position;%%/UKF.LightSpeed;
+	TM = repmat(position,1,bSPcs) - UKF.AnchorPosition;
 	for ki=1:bSPcs
-	       Zpred = [Zpred ;norm(TM(:,ki))];
+	    Zpred = [Zpred ;norm(TM(:,ki))];
 	end
 	   Y = Zpred;
 	

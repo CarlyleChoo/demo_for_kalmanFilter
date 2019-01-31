@@ -14,7 +14,7 @@ function x_n = ekf_ins_f(x,param)
 	roll = x(7);pitch = x(8);head = x(9);
 	I = eye(3,3);
 	O = zeros(3,3);
-	%%DCM£¬×ø±êÏµN-->B
+	%%DCM Transfrmation: N->B
 	Rz = [cos(head),-sin(head),0;
 		  sin(head),cos(head),0;
 		   0,0,1];

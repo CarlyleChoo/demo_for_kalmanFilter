@@ -13,7 +13,7 @@ function [x_n,E,D] = ekf_err_ins_f(x,param)
 	I = eye(3,3);
 	O = zeros(3,3);
 	
-	%%DCM£¬×ø±êÏµN-->B
+	%%DCM Transfrmation:N-->B
 	Rz = [cos(head),-sin(head),0;
 		  sin(head),cos(head),0;
 		   0,0,1];
@@ -46,5 +46,3 @@ function [x_n,E,D] = ekf_err_ins_f(x,param)
 			 O,O,O,I,O;
 			 O,O,O,O,I;
 		    ];
-
-    
